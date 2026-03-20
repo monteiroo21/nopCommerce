@@ -1,7 +1,10 @@
-﻿using Autofac.Extensions.DependencyInjection;
+using Autofac.Extensions.DependencyInjection;
 using Nop.Core.Configuration;
 using Nop.Core.Infrastructure;
 using Nop.Web.Framework.Infrastructure.Extensions;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Nop.Web;
 
@@ -10,6 +13,32 @@ public partial class Program
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddOpenTelemetry()
+            .WithTracing(tracing =>
+            {
+                tracing
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("NopCommerce.Web"))
+                .AddAspNetCoreInstrumentation()
+                .AddSqlClientInstrumentation(options =>
+                {
+                    options.SetDbStatementForText = true;
+                })
+                .AddSource("NopCommerce")
+                .AddOtlpExporter()
+                .AddConsoleExporter();
+            });
+
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(metrics =>
+            {
+                metrics
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("NopCommerce.Web"))
+                .AddMeter("NopCommerce")
+                .AddOtlpExporter()
+                .AddConsoleExporter();
+            });
+
 
         builder.Configuration.AddJsonFile(NopConfigurationDefaults.AppSettingsFilePath, true, true);
         if (!string.IsNullOrEmpty(builder.Environment?.EnvironmentName))

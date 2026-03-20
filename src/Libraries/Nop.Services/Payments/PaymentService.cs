@@ -1,4 +1,4 @@
-﻿using Nop.Core;
+using Nop.Core;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Services.Catalog;
@@ -50,6 +50,14 @@ public partial class PaymentService : IPaymentService
     /// </returns>
     public virtual async Task<ProcessPaymentResult> ProcessPaymentAsync(ProcessPaymentRequest processPaymentRequest)
     {
+        using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("ProcessPayment");
+        if (processPaymentRequest != null)
+        {
+            activity?.SetTag("customer.id", processPaymentRequest.CustomerId);
+            activity?.SetTag("payment.method", processPaymentRequest.PaymentMethodSystemName);
+            activity?.SetTag("order.total", processPaymentRequest.OrderTotal.ToString());
+        }
+
         if (processPaymentRequest.OrderTotal == decimal.Zero)
         {
             var result = new ProcessPaymentResult

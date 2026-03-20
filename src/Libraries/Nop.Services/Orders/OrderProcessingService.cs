@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Core.Caching;
@@ -1576,6 +1576,9 @@ public partial class OrderProcessingService : IOrderProcessingService
 
         async Task<PlaceOrderResult> placeOrder(PlaceOrderContainer placeOrderContainer)
         {
+            using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("PlaceOrder");
+            activity?.SetTag("customer.id", placeOrderContainer.Customer.Id);
+            
             var result = new PlaceOrderResult();
 
             try
@@ -1638,7 +1641,21 @@ public partial class OrderProcessingService : IOrderProcessingService
             }
 
             if (result.Success)
+            {
+                Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
+                    new KeyValuePair<string, object?>("order.status", "success"),
+                    new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
+
+                Nop.Core.Infrastructure.NopMetrics.OrderTotalAmount.Record(
+                    (double)result.PlacedOrder.OrderTotal,
+                    new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
+
                 return result;
+            }
+
+            Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
+                new KeyValuePair<string, object?>("order.status", "failure"),
+                new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
 
             //log errors
             var logError = result.Errors.Aggregate("Error while placing order. ",

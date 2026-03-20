@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -1549,6 +1549,14 @@ public partial class ShoppingCartService : IShoppingCartService
         DateTime? rentalStartDate = null, DateTime? rentalEndDate = null,
         int quantity = 1, bool addRequiredProducts = true, int? wishlistId = null)
     {
+        using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("AddToCart");
+        if (customer != null)
+            activity?.SetTag("customer.id", customer.Id);
+        if (product != null)
+            activity?.SetTag("product.id", product.Id);
+        activity?.SetTag("cart.type", shoppingCartType.ToString());
+        activity?.SetTag("quantity", quantity);
+
         ArgumentNullException.ThrowIfNull(customer);
 
         ArgumentNullException.ThrowIfNull(product);

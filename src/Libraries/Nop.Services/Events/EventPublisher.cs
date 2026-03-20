@@ -1,4 +1,4 @@
-﻿using Nop.Core.Events;
+using Nop.Core.Events;
 using Nop.Core.Infrastructure;
 using Nop.Services.Logging;
 
@@ -19,8 +19,12 @@ public partial class EventPublisher : IEventPublisher
     /// <returns>A task that represents the asynchronous operation</returns>
     public virtual async Task PublishAsync<TEvent>(TEvent @event)
     {
+        using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity($"PublishEvent: {@event.GetType().Name}");
+        activity?.SetTag("event.type", @event.GetType().Name);
+
         //get all event consumers
         var consumers = EngineContext.Current.ResolveAll<IConsumer<TEvent>>().ToList();
+        activity?.SetTag("event.consumers_count", consumers.Count);
 
         foreach (var consumer in consumers)
         {

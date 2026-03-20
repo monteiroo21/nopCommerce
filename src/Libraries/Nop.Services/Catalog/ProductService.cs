@@ -1701,6 +1701,13 @@ public partial class ProductService : IProductService
     {
         ArgumentNullException.ThrowIfNull(product);
 
+        using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("Product.AdjustInventory");
+        if (product != null)
+            activity?.SetTag("product.id", product.Id);
+            activity?.SetTag("product.name", product.Name);
+            activity?.SetTag("product.sku", product.Sku);
+            activity?.SetTag("quantity.to.change", quantityToChange);
+            
         if (quantityToChange == 0)
             return;
 

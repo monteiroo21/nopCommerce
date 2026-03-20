@@ -2022,6 +2022,10 @@ public partial class CheckoutController : BasePublicController
         {
             var customer = await _workContext.GetCurrentCustomerAsync();
 
+            using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("Checkout.ConfirmOrder");
+            if (customer != null)
+                activity?.SetTag("customer.id", customer.Id);
+
             var isCaptchaSettingEnabled = await _customerService.IsGuestAsync(customer) &&
                                           _captchaSettings.Enabled && _captchaSettings.ShowOnCheckoutPageForGuests;
 

@@ -6,6 +6,8 @@ services:
             - "80:80"
         depends_on:
             - nopcommerce_database
+        volumes:
+            - nopcommerce_app_data:/app/App_Data
     nopcommerce_database:
         image: "mcr.microsoft.com/mssql/server:2019-latest"
         container_name: nopcommerce_mssql_server
@@ -13,6 +15,9 @@ services:
             SA_PASSWORD: "nopCommerce_db_password"
             ACCEPT_EULA: "Y"
             MSSQL_PID: "Express"
+        volumes:
+            - nopcommerce_data:/var/opt/mssql
 
 volumes:
-  nopcommerce_data:            
+  nopcommerce_data:
+  nopcommerce_app_data:
