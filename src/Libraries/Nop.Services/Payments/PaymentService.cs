@@ -79,7 +79,16 @@ public partial class PaymentService : IPaymentService
                                 .LoadPluginBySystemNameAsync(processPaymentRequest.PaymentMethodSystemName, customer, processPaymentRequest.StoreId)
                             ?? throw new NopException("Payment method couldn't be loaded");
 
-        return await paymentMethod.ProcessPaymentAsync(processPaymentRequest);
+        var startTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+        
+        var processPaymentResult = await paymentMethod.ProcessPaymentAsync(processPaymentRequest);
+        
+        var durationMs = System.Diagnostics.Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
+        Nop.Core.Infrastructure.NopMetrics.PaymentProviderDuration.Record(
+            durationMs,
+            new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName));
+
+        return processPaymentResult;
     }
 
     /// <summary>

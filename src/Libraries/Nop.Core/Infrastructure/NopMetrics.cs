@@ -32,5 +32,16 @@ namespace Nop.Core.Infrastructure
                 name: "order.total.amount",
                 unit: "currency_units",
                 description: "Distribution of placed order totals in store currency");
+
+        /// <summary>
+        /// Histogram of external payment gateway processing time.
+        /// Tags: payment.method.
+        /// Passes the "2am test": if latency spikes, an engineer knows the third-party provider is degraded.
+        /// </summary>
+        public static readonly Histogram<double> PaymentProviderDuration =
+            Meter.CreateHistogram<double>(
+                name: "payment.provider.duration",
+                unit: "ms",
+                description: "Latency of external payment gateway processing");
     }
 }
