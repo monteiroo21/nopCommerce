@@ -26,7 +26,7 @@ public partial class Program
                 })
                 .AddSource("NopCommerce")
                 .AddProcessor<PiiSanitizationProcessor>()
-                .AddOtlpExporter()
+                .AddOtlpExporter(options => options.Endpoint = new Uri("http://otel-collector:4317"))
                 .AddConsoleExporter();
             });
 
@@ -35,8 +35,12 @@ public partial class Program
             {
                 metrics
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("NopCommerce.Web"))
+                .AddAspNetCoreInstrumentation()
                 .AddMeter("NopCommerce")
-                .AddOtlpExporter()
+                .AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri("http://otel-collector:4317");
+                })
                 .AddConsoleExporter();
             });
 
