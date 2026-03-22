@@ -1,0 +1,87 @@
+{
+    "id": 1,
+    "type": "table",
+    "title": "Panel Title",
+    "gridPos": {
+        "x": 0,
+        "y": 0,
+        "h": 8,
+        "w": 12
+    },
+    "fieldConfig": {
+        "defaults": {
+            "custom": {
+                "align": "auto",
+                "cellOptions": {
+                    "type": "auto"
+                },
+                "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                    {
+                        "color": "green",
+                        "value": null
+                    },
+                    {
+                        "color": "red",
+                        "value": 80
+                    }
+                ]
+            },
+            "color": {
+                "mode": "thresholds"
+            }
+        },
+        "overrides": [
+            {
+                "matcher": {
+                    "id": "byName",
+                    "options": "Trace ID"
+                },
+                "properties": [
+                    {
+                        "id": "links",
+                        "value": [
+                            {
+                                "targetBlank": true,
+                                "title": "Show Details",
+                                "url": "/explore?left={\"datasource\":\"Jaeger\",\"queries\":[{\"queryType\":\"traceId\",\"query\":\"${__data.fields[0]}\",\"refId\":\"A\"}],\"range\":{\"from\":\"now-6h\",\"to\":\"now\"}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "pluginVersion": "11.5.2",
+    "targets": [
+        {
+            "datasource": {
+                "type": "jaeger",
+                "uid": "jaeger"
+            },
+            "queryType": "search",
+            "refId": "A",
+            "service": "NopCommerce.Web"
+        }
+    ],
+    "datasource": {
+        "type": "jaeger",
+        "uid": "jaeger"
+    },
+    "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+            "show": false,
+            "reducer": [
+                "sum"
+            ],
+            "countRows": false,
+            "fields": ""
+        }
+    }
+}

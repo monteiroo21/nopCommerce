@@ -1646,10 +1646,6 @@ public partial class OrderProcessingService : IOrderProcessingService
                     new KeyValuePair<string, object?>("order.status", "success"),
                     new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
 
-                Nop.Core.Infrastructure.NopMetrics.OrderTotalAmount.Record(
-                    (double)result.PlacedOrder.OrderTotal,
-                    new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
-
                 return result;
             }
 

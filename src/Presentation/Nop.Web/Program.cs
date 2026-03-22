@@ -25,6 +25,7 @@ public partial class Program
                     options.SetDbStatementForText = true;
                 })
                 .AddSource("NopCommerce")
+                .AddProcessor<PiiSanitizationProcessor>()
                 .AddOtlpExporter()
                 .AddConsoleExporter();
             });

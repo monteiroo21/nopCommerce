@@ -23,15 +23,15 @@ namespace Nop.Core.Infrastructure
                 description: "Number of order placements — tagged by status and payment method");
 
         /// <summary>
-        /// Histogram of order monetary totals (in store currency).
-        /// Shows revenue distribution: are orders typically small or large? Are there outliers?
-        /// PII note: amount is an aggregate figure, not linked to any individual — safe to record.
+        /// Histogram of inventory adjustment processing time.
+        /// Operational insight: DB row locking during inventory updates is a major bottleneck under load. 
+        /// Spikes indicate database contention requiring architectural changes (e.g., async queues).
         /// </summary>
-        public static readonly Histogram<double> OrderTotalAmount =
+        public static readonly Histogram<double> InventoryUpdateDuration =
             Meter.CreateHistogram<double>(
-                name: "order.total.amount",
-                unit: "currency_units",
-                description: "Distribution of placed order totals in store currency");
+                name: "inventory.update.duration",
+                unit: "ms",
+                description: "Latency of inventory adjustment operations in the database");
 
         /// <summary>
         /// Histogram of external payment gateway processing time.

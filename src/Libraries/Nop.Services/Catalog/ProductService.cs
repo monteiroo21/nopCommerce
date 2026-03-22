@@ -17,6 +17,7 @@ using Nop.Services.Security;
 using Nop.Services.Shipping.Date;
 using Nop.Services.Stores;
 using Nop.Services.Vendors;
+using System.Diagnostics;
 
 namespace Nop.Services.Catalog;
 
@@ -1701,12 +1702,14 @@ public partial class ProductService : IProductService
     {
         ArgumentNullException.ThrowIfNull(product);
 
+        var stopwatch = Stopwatch.StartNew();
+
         using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("Product.AdjustInventory");
-        if (product != null)
-            activity?.SetTag("product.id", product.Id);
-            activity?.SetTag("product.name", product.Name);
-            activity?.SetTag("product.sku", product.Sku);
-            activity?.SetTag("quantity.to.change", quantityToChange);
+        activity?.SetTag("product.id", product.Id);
+        activity?.SetTag("product.name", product.Name);
+        activity?.SetTag("product.sku", product.Sku);
+        activity?.SetTag("quantity.to.change", quantityToChange);
+        activity?.SetTag("inventory.remaining_stock", product.StockQuantity + quantityToChange);
             
         if (quantityToChange == 0)
             return;
@@ -1800,6 +1803,15 @@ public partial class ProductService : IProductService
             if (associatedProduct != null) 
                 await AdjustInventoryAsync(associatedProduct, quantityToChange * attributeValue.Quantity, message);
         }
+
+        stopwatch.Stop();
+        Nop.Core.Infrastructure.NopMetrics.InventoryUpdateDuration.Record(
+            (double)stopwatch.ElapsedMilliseconds,
+            new KeyValuePair<string, object?>("product.id", product.Id),
+            new KeyValuePair<string, object?>("product.name", product.Name),
+            new KeyValuePair<string, object?>("product.sku", product.Sku),
+            new KeyValuePair<string, object?>("quantity.to.change", quantityToChange),
+            new KeyValuePair<string, object?>("inventory.remaining_stock", product.StockQuantity + quantityToChange));
     }
 
     /// <summary>
