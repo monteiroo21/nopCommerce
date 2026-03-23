@@ -34,14 +34,14 @@ namespace Nop.Core.Infrastructure
                 description: "Latency of inventory adjustment operations in the database");
 
         /// <summary>
-        /// Histogram of external payment gateway processing time.
-        /// Tags: payment.method.
-        /// Passes the "2am test": if latency spikes, an engineer knows the third-party provider is degraded.
+        /// Histogram of the full PlaceOrderAsync execution time (end-to-end).
+        /// Tags: order.status = "success" | "failure".
+        /// Under load this reveals DB contention, row locking delays and notification overhead.
         /// </summary>
-        public static readonly Histogram<double> PaymentProviderDuration =
+        public static readonly Histogram<double> CheckoutDuration =
             Meter.CreateHistogram<double>(
-                name: "payment.provider.duration",
+                name: "checkout.duration",
                 unit: "ms",
-                description: "Latency of external payment gateway processing");
+                description: "End-to-end latency of the full PlaceOrderAsync flow");
     }
 }

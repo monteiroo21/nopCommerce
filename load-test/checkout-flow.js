@@ -101,6 +101,7 @@ export default function () {
         '__RequestVerificationToken': csrfToken,
     });
     check(res, { 'Order confirmed': (r) => r.status === 200 });
+    console.log("ConfirmOrderResponse: " + res.body);
 
     sleep(1);
 }

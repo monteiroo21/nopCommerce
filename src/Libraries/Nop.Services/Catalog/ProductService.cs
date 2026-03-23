@@ -1,4 +1,4 @@
-﻿using System.Data.SqlTypes;
+using System.Data.SqlTypes;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Catalog;
@@ -1806,7 +1806,7 @@ public partial class ProductService : IProductService
 
         stopwatch.Stop();
         Nop.Core.Infrastructure.NopMetrics.InventoryUpdateDuration.Record(
-            (double)stopwatch.ElapsedMilliseconds,
+            stopwatch.Elapsed.TotalMilliseconds,
             new KeyValuePair<string, object?>("product.id", product.Id),
             new KeyValuePair<string, object?>("product.name", product.Name),
             new KeyValuePair<string, object?>("product.sku", product.Sku),

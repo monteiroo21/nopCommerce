@@ -1568,6 +1568,8 @@ public partial class OrderProcessingService : IOrderProcessingService
     {
         ArgumentNullException.ThrowIfNull(processPaymentRequest);
 
+        var checkoutSw = System.Diagnostics.Stopwatch.StartNew();
+
         if (processPaymentRequest.OrderGuid == Guid.Empty)
             throw new Exception("Order GUID is not generated");
 
@@ -1578,7 +1580,7 @@ public partial class OrderProcessingService : IOrderProcessingService
         {
             using var activity = Nop.Core.Infrastructure.NopTracing.ActivitySource.StartActivity("PlaceOrder");
             activity?.SetTag("customer.id", placeOrderContainer.Customer.Id);
-            
+
             var result = new PlaceOrderResult();
 
             try
@@ -1663,7 +1665,15 @@ public partial class OrderProcessingService : IOrderProcessingService
         }
 
         if (!_orderSettings.PlaceOrderWithLock)
-            return await placeOrder(details);
+        {
+            var resultNoLock = await placeOrder(details);
+            
+            checkoutSw.Stop();
+            Nop.Core.Infrastructure.NopMetrics.CheckoutDuration.Record(checkoutSw.Elapsed.TotalMilliseconds,
+                new KeyValuePair<string, object?>("order.status", resultNoLock.Success ? "success" : "failure"));
+
+            return resultNoLock;
+        }
 
         PlaceOrderResult result;
         var resource = details.Customer.Id.ToString();
@@ -1700,6 +1710,10 @@ public partial class OrderProcessingService : IOrderProcessingService
         {
             mutex.ReleaseMutex();
         }
+
+        checkoutSw.Stop();
+        Nop.Core.Infrastructure.NopMetrics.CheckoutDuration.Record(checkoutSw.Elapsed.TotalMilliseconds,
+            new KeyValuePair<string, object?>("order.status", result.Success ? "success" : "failure"));
 
         return result;
     }
