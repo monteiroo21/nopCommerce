@@ -1809,9 +1809,7 @@ public partial class ProductService : IProductService
             stopwatch.Elapsed.TotalMilliseconds,
             new KeyValuePair<string, object?>("product.id", product.Id),
             new KeyValuePair<string, object?>("product.name", product.Name),
-            new KeyValuePair<string, object?>("product.sku", product.Sku),
-            new KeyValuePair<string, object?>("quantity.to.change", quantityToChange),
-            new KeyValuePair<string, object?>("inventory.remaining_stock", product.StockQuantity + quantityToChange));
+            new KeyValuePair<string, object?>("product.sku", product.Sku));
     }
 
     /// <summary>

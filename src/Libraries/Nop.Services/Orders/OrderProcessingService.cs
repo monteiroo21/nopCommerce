@@ -1644,16 +1644,8 @@ public partial class OrderProcessingService : IOrderProcessingService
 
             if (result.Success)
             {
-                Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
-                    new KeyValuePair<string, object?>("order.status", "success"),
-                    new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
-
                 return result;
             }
-
-            Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
-                new KeyValuePair<string, object?>("order.status", "failure"),
-                new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
 
             //log errors
             var logError = result.Errors.Aggregate("Error while placing order. ",
@@ -1671,6 +1663,9 @@ public partial class OrderProcessingService : IOrderProcessingService
             checkoutSw.Stop();
             Nop.Core.Infrastructure.NopMetrics.CheckoutDuration.Record(checkoutSw.Elapsed.TotalMilliseconds,
                 new KeyValuePair<string, object?>("order.status", resultNoLock.Success ? "success" : "failure"));
+            Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
+                new KeyValuePair<string, object?>("order.status", resultNoLock.Success ? "success" : "failure"),
+                new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
 
             return resultNoLock;
         }
@@ -1714,6 +1709,9 @@ public partial class OrderProcessingService : IOrderProcessingService
         checkoutSw.Stop();
         Nop.Core.Infrastructure.NopMetrics.CheckoutDuration.Record(checkoutSw.Elapsed.TotalMilliseconds,
             new KeyValuePair<string, object?>("order.status", result.Success ? "success" : "failure"));
+        Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1,
+            new KeyValuePair<string, object?>("order.status", result.Success ? "success" : "failure"),
+            new KeyValuePair<string, object?>("payment.method", processPaymentRequest.PaymentMethodSystemName ?? "unknown"));
 
         return result;
     }

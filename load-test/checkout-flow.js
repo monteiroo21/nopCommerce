@@ -100,8 +100,17 @@ export default function () {
     res = http.post(`${BASE_URL}/checkout/OpcConfirmOrder`, {
         '__RequestVerificationToken': csrfToken,
     });
-    check(res, { 'Order confirmed': (r) => r.status === 200 });
-    console.log("ConfirmOrderResponse: " + res.body);
+    check(res, { 'Order confirmed': (r) => r.status === 200 && r.body && r.json('success') == 1 });
+
+    if (Math.random() < 0.2) {
+        let badRes = http.post(`${BASE_URL}/checkout/OpcConfirmOrder`, {
+            '__RequestVerificationToken': csrfToken,
+        });
+        check(badRes, { 'Order artificially failed': (r) => r.status === 200 && r.body && r.json('error') == 1 });
+        console.log("Forced Failure Response: " + badRes.body);
+    } else {
+        console.log("ConfirmOrderResponse: " + res.body);
+    }
 
     sleep(1);
 }

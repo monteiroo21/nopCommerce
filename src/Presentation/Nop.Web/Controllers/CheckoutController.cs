@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Core.Domain.Common;
@@ -2126,6 +2126,12 @@ public partial class CheckoutController : BasePublicController
         catch (Exception exc)
         {
             await _logger.WarningAsync(exc.Message, exc, await _workContext.GetCurrentCustomerAsync());
+            
+            // Record load test checkout attempt failures (like 'Your cart is empty') natively into the metric
+            Nop.Core.Infrastructure.NopMetrics.OrdersPlaced.Add(1, 
+                new KeyValuePair<string, object?>("order.status", "failure"),
+                new KeyValuePair<string, object?>("payment.method", "unknown"));
+                
             return Json(new { error = 1, message = exc.Message });
         }
     }

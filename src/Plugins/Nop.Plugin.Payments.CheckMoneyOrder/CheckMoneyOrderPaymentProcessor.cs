@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Nop.Core.Domain.Orders;
 using Nop.Plugin.Payments.CheckMoneyOrder.Components;
 using Nop.Services.Configuration;

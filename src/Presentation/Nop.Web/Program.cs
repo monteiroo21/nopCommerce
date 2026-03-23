@@ -19,7 +19,17 @@ public partial class Program
             {
                 tracing
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("NopCommerce.Web"))
-                .AddAspNetCoreInstrumentation()
+                .AddAspNetCoreInstrumentation(options => 
+                {
+                    options.EnrichWithHttpResponse = (activity, response) =>
+                    {
+                        var request = response.HttpContext.Request;
+                        if (request.Path.HasValue && !request.Path.Value.Contains("lib") && !request.Path.Value.Contains("css") && !request.Path.Value.Contains("js"))
+                        {
+                            activity.DisplayName = $"{request.Method} {request.Path.Value}";
+                        }
+                    };
+                })
                 .AddSqlClientInstrumentation(options =>
                 {
                     options.SetDbStatementForText = true;

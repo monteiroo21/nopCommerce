@@ -34,6 +34,16 @@ namespace Nop.Core.Infrastructure
                 description: "Latency of inventory adjustment operations in the database");
 
         /// <summary>
+        /// Histogram of payment provider processing time.
+        /// Tags: payment.method = system name string.
+        /// </summary>
+        public static readonly Histogram<double> PaymentProviderDuration =
+            Meter.CreateHistogram<double>(
+                name: "payment.provider.duration",
+                unit: "ms",
+                description: "Latency of external payment gateway processing");
+
+        /// <summary>
         /// Histogram of the full PlaceOrderAsync execution time (end-to-end).
         /// Tags: order.status = "success" | "failure".
         /// Under load this reveals DB contention, row locking delays and notification overhead.
