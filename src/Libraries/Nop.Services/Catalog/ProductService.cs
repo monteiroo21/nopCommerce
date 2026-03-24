@@ -1708,8 +1708,6 @@ public partial class ProductService : IProductService
         activity?.SetTag("product.id", product.Id);
         activity?.SetTag("product.name", product.Name);
         activity?.SetTag("product.sku", product.Sku);
-        activity?.SetTag("quantity.to.change", quantityToChange);
-        activity?.SetTag("inventory.remaining_stock", product.StockQuantity + quantityToChange);
             
         if (quantityToChange == 0)
             return;

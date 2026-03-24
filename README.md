@@ -1,80 +1,159 @@
-﻿﻿nopCommerce: free and open-source eCommerce solution
-===========
+# Layers Organization and Dependency Rules
 
-[nopCommerce](https://www.nopcommerce.com/?utm_source=github&utm_medium=content&utm_campaign=homepage) is the best open-source eCommerce platform. nopCommerce is free, and it is the most popular ASP.NET Core shopping cart.
+NopCommerce follows a **N-Tier Layered Architecture**. The foundational dependency rule of this architecture is that **dependencies strictly flow downwards** toward the core. Upper layers depend on lower layers, but lower layers maintain zero knowledge of the layers above them.
 
-![nopCommerce demo](https://www.nopcommerce.com/images/github/responsive_devices_codeplex.png#v1)
+The system is organized into the following primary layers, from top to bottom:
 
-### Key features ###
+### 1. Presentation Layer (`Nop.Web`)
+* **Responsibility:** Handles UI rendering, HTTP request routing, MVC controllers, and API endpoints. It acts as the interactive entry point for users interacting with the store (e.g., `CheckoutController`).
+* **Dependency Rule:** Sits at the top and depends on all lower layers (primarily `Nop.Services` and `Nop.Core`).
 
-* The product is being developed and supported by the professional team since 2008.
-* nopCommerce has been downloaded more than 3,000,000 times.
-* The active developer community has more than 250,000 members.
-* nopCommerce runs on .NET 9 with an MS SQL 2012 (or higher) backend database.
-* nopCommerce is cross-platform, and you can run it on Windows, Linux, or Mac.
-* nopCommerce supports Docker out of the box, so you can easily run nopCommerce on a Linux machine.
-* nopCommerce supports PostgreSQL and MySQL databases.
-* nopCommerce fully supports web farms. You can read more about it [here](https://docs.nopcommerce.com/en/developer/tutorials/web-farms.html?utm_source=github&utm_medium=referral&utm_campaign=documentation&utm_content=text).  
-* All methods in nopCommerce are async.
-* nopCommerce supports multi-factor authentication out of the box.
-* Start our [online course for developers](https://nopcommerce.com/training?utm_source=github&utm_medium=referral&utm_campaign=course&utm_content=text) and get the practical and technical skills you need to run and customize nopCommerce websites.
+### 2. Business Logic Layer (`Nop.Services`)
+* **Responsibility:** Where core business rules, calculations (like taxes and discounts), and workflows are executed. It orchestrates actions between the database and the domain entities.
+* **Dependency Rule:** Depends heavily on `Nop.Core` (for domain models) and `Nop.Data` (for database access/repositories). It is completely decoupled from the Presentation Layer.
 
-![Logo](https://www.nopcommerce.com/images/github/logos.png#v2)
+### 3. Data Access Layer (`Nop.Data`)
+* **Responsibility:** Acts as the translation layer between C# code and the SQL database using Entity Framework Core. It defines the mapping configurations (using the Fluent API) to convert domain entities into database tables and provides the Repository implementation.
+* **Dependency Rule:** Depends entirely on `Nop.Core` to know which entities it needs to persist.
 
-nopCommerce architecture follows well-known software patterns and the best security practices. The source code is fully customizable. Pluggable and clear architecture makes it easy to develop custom functionality and follow any business requirements.
-
-Using the latest Microsoft technologies, nopCommerce provides high performance, stability, and security. nopCommerce is also fully compatible with Azure and web farms.
-
-Our clear and detailed [documentation](https://docs.nopcommerce.com/developer/index.html?utm_source=github&utm_medium=referral&utm_campaign=documentation&utm_content=text) and [online course](https://nopcommerce.com/training?utm_source=github&utm_medium=referral&utm_campaign=course&utm_content=text) for developers will help you start with nopCommerce easily.
+### 4. Domain Layer (`Nop.Core`)
+* **Responsibility:** The foundational layer of the system. It contains the core domain entities (e.g., `Customer`, `Order`, `Product`), common helper classes, and crucial abstract interfaces (like `IEngine` for Dependency Injection and `IEventPublisher` for internal messaging).
+* **Dependency Rule:** This layer sits at the very bottom and **depends on no other layers** within the NopCommerce solution.
 
 
-### The advantages of working with nopCommerce ###
+# Internal Event Handling and `IEventPublisher`
 
-nopCommerce offers powerful [out-of-the-box features](https://www.nopcommerce.com/features?utm_source=github&utm_medium=referral&utm_campaign=features&utm_content=text) for creating an online store of any size and type.
+NopCommerce handles events internally using an **In-Process Publisher/Subscriber** pattern. It does not use heavy external message brokers like RabbitMQ or Kafka. Instead, the events are dispatched and consumed synchronously within the application memory space itself.
 
-nopCommerce is integrated with all the popular third-party services. You can find thousands of integrations on nopCommerce [Marketplace](https://www.nopcommerce.com/marketplace?utm_source=github&utm_medium=referral&utm_campaign=marketplace&utm_content=text).
+### The Role of `IEventPublisher`
 
-The [Web API plugin](https://www.nopcommerce.com/web-api?utm_source=github&utm_medium=referral&utm_campaign=WebAPI&utm_content=text) by the nopCommerce team lets you build integrations with third-party services or mobile applications using REST. The Web API plugin is available with source code and covers all methods of nopCommerce: backend and frontend. You can read more about it [here](https://www.nopcommerce.com/web-api?utm_source=github&utm_medium=referral&utm_campaign=WebAPI&utm_content=text).
+The `IEventPublisher` interface, defined in the `Nop.Core` layer, is the primary mechanism used for this event system. Its core architectural purpose is to enforce **extreme decoupling** (Separation of Concerns).
 
-Friendly members of the [nopCommerce community](https://www.nopcommerce.com/boards?utm_source=github&utm_medium=referral&utm_campaign=forum&utm_content=text) will always help with advice and share their experiences. nopCommerce core development team provides [professional support](https://www.nopcommerce.com/nopcommerce-premium-support-services?utm_source=github&utm_medium=referral&utm_campaign=premium_support&utm_content=text) within 24 hours.
+Without an event publisher, a core service (like `OrderProcessingService`) would need to directly dependency-inject every other service dealing with the side-effects of an order (e.g., sending confirmation emails, updating product inventory, adjusting reward points). This would create a monolithic, tightly-coupled nightmare. By utilizing `IEventPublisher`, the order service simply broadcasts that an event occurred (e.g., `EntityInsertedEvent<Order>`) and finishes its job. Specialized "consumer" classes secretly listen for this broadcast and independently execute their own specific tasks.
 
+### Architectural Impact on Observability
 
-## Store demo ##
-
-Evaluate the functionality and convenience of nopCommerce as a customer and store owner.
-
-Front End | Admin area
-----|------
-[![ScreenShot](https://www.nopcommerce.com/images/github/public-demo.png#v1)](https://demo.nopcommerce.com?utm_source=github&utm_medium=referral&utm_campaign=demo_store&utm_content=button) | [![ScreenShot](https://www.nopcommerce.com/images/github/admin-demo.png#v1)](https://admin-demo.nopcommerce.com/admin?utm_source=github&utm_medium=referral&utm_campaign=demo_store&utm_content=button)
+From an instrumentation perspective, this pattern is a massive advantage. Because almost all critical domain side-effects are funneled through the single `IEventPublisher.PublishAsync` method, it creates a perfect, centralized interception boundary for OpenTelemetry. By wrapping just this one method in an `ActivitySource.StartActivity` span, we can automatically trace hundreds of domain operations across the entire application without needing to edit hundreds of individual source files.
 
 
-### nopCommerce resources ###
+# Where the Code Makes Observability Easy — and Hard
 
-nopCommerce official site: [https://www.nopcommerce.com](https://www.nopcommerce.com/?utm_source=github&utm_medium=referral&utm_campaign=homepage&utm_content=links)
+### Easy Instrumentation
 
-* [Demo store](https://www.nopcommerce.com/demo?utm_source=github&utm_medium=referral&utm_campaign=demo_store&utm_content=links)
-* [Download nopCommerce](https://www.nopcommerce.com/download-nopcommerce?utm_source=github&utm_medium=referral&utm_campaign=download_nop&utm_content=links)
-* [Online course for developers](https://nopcommerce.com/training?utm_source=github&utm_medium=referral&utm_campaign=course&utm_content=links)
-* [Feature list](https://www.nopcommerce.com/features?utm_source=github&utm_medium=referral&utm_campaign=features&utm_content=links)
-* [Web API plugin](https://www.nopcommerce.com/web-api?utm_source=github&utm_medium=referral&utm_campaign=WebAPI&utm_content=links)
-* [nopCommerce documentation](https://docs.nopcommerce.com?utm_source=github&utm_medium=referral&utm_campaign=documentation&utm_content=links)
-* [Community forums](https://www.nopcommerce.com/boards?utm_source=github&utm_medium=referral&utm_campaign=forum&utm_content=links)
-* [Premium support services](https://www.nopcommerce.com/nopcommerce-premium-support-services?utm_source=github&utm_medium=referral&utm_campaign=premium_support&utm_content=links)
-* [Certified developer program](https://www.nopcommerce.com/certified-developer-program?utm_source=github&utm_medium=referral&utm_campaign=certified_developer&utm_content=links)
-* [nopCommerce partners](https://www.nopcommerce.com/partners?utm_source=github&utm_medium=referral&utm_campaign=solution_partners&utm_content=links)
+NopCommerce's strict use of Dependency Injection and well-defined service interfaces makes several aspects of instrumentation straightforward:
 
-nopCommerce YouTube: [The Architecture behind the nopCommerce eCommerce Platform](https://www.youtube.com/watch?v=6gLbizzSA9o&list=PLnL_aDfmRHwtJmzeA7SxrpH3-XDY2ue0a)
+* **Centralized metric definitions:** Because `Nop.Core` sits at the bottom of the dependency graph and is referenced by every other layer, we can define all custom OpenTelemetry instruments (Histograms, Counters) in a single static class (`NopMetrics`) and record data from any layer — Services, Presentation, or Plugins — without circular dependencies.
 
+* **Clear service boundaries:** High-level methods like `OrderProcessingService.PlaceOrderAsync` and `ProductService.AdjustInventoryAsync` are well-isolated entry points. Wrapping them with a `Stopwatch` and a `Histogram.Record()` call immediately yields meaningful end-to-end latency data.
 
-### Earn with nopCommerce ###
+* **The `IEventPublisher` interception point:** As described above, wrapping the single `PublishAsync` method with an OpenTelemetry Activity span provides automatic distributed tracing across hundreds of domain events with a single code change.
 
-60,000 stores worldwide are powered by nopCommerce, and 10,000 new stores open every year. nopCommerce [solution partners’ directory](https://www.nopcommerce.com/partners?utm_source=github&utm_medium=referral&utm_campaign=solution_partners&utm_content=text_become_partner) gets 80,000+ page views per year from store owners who are looking for a partner to build a store from scratch, migrate from another platform, or improve and customize an existing store.
+### Hard Instrumentation
 
-Become a solution partner of nopCommerce and get new clients – [learn more](https://www.nopcommerce.com/become-partner?utm_source=github&utm_medium=referral&utm_campaign=become-partner&utm_content=learn_more).
+Two areas of the codebase make adding observability significantly more difficult:
 
-Create a new graphical theme or develop a new plugin or integration and sell it on the nopCommerce [Marketplace](https://www.nopcommerce.com/marketplace?utm_source=github&utm_medium=referral&utm_campaign=marketplace&utm_content=text_sell_on_marketplace).
+* **ASP.NET Core conventional routing:** NopCommerce uses conventional MVC routing (e.g., `{controller}/{action}/{id?}`), which causes the built-in OpenTelemetry HTTP instrumentation to group almost all POST requests into a single, generic metric bucket. This makes it impossible to isolate the performance of specific endpoints (like `OpcConfirmOrder`) using standard HTTP metrics alone — forcing us to create custom, business-level metrics instead.
 
 
-### Contribute ###
+* **The "God Service" problem:** `OrderProcessingService.cs` is a 2,000+ line class where dozens of distinct operations all execute inside a single `PlaceOrderAsync` method. Because there is no natural boundary between these sub-operations, it is impossible to trace them individually without manually injecting `ActivitySource.StartActivity` spans deep inside the method body.
 
-As a free and open-source project, we are very grateful to everyone who helps us to develop nopCommerce. Please find more details about the options and bonuses for contributors at [contribute page](https://www.nopcommerce.com/contribute?utm_source=github&utm_medium=referral&utm_campaign=contribute&utm_content=text).
+
+
+# Architecture
+
+This is the final architecture diagram which represents the selected flow (Customer places an order):
+
+![Architecture Diagram of the Selected Flow](architecture-diagram.png)
+
+# Trace Implementation
+
+To achieve deep visibility into NopCommerce's distributed operations, end-to-end tracing was implemented using **OpenTelemetry (OTel)** SDK for .NET. The tracing architecture is broken into three distinct layers: automatic external instrumentation, centralized custom tracing, and event-based interception.
+
+### 1. Infrastructure and Auto-Instrumentation
+
+The foundation of our tracing requires capturing all entry points and fundamental dependencies:
+* **OTLP Export:** The `OpenTelemetry.Exporter.OpenTelemetryProtocol` package was integrated into `Nop.Web`. This allows traces to be efficiently exported over gRPC directly to a **Jaeger** backend hosted in our Docker Compose stack.
+
+* **HTTP & Entity Framework:** In `Program.cs`, the built-in ASP.NET Core instrumentation (`AddAspNetCoreInstrumentation`) was enabled to automatically capture all incoming web requests (e.g., POST `/checkout/OpcConfirmOrder`), and SQL Client instrumentation (`AddSqlClientInstrumentation`) to automatically trace the execution time of all underlying SQL queries generated by `Nop.Data`.
+
+### 2. Centralized Custom Tracing (`NopTracing`)
+
+To trace specific business logic, a centralized tracing utility was created:
+
+* A static `NopTracing` class was introduced located within `Nop.Core.Infrastructure`.
+
+* This class initializes a single, application-wide `ActivitySource` named `"NopCommerce.Web"`.
+
+* By placing this in the `Nop.Core` layer, any controller, service, or plugin can statically reference `NopTracing.ActivitySource.StartActivity("OperationName")` to begin a custom trace span without needing Dependency Injection wiring.
+
+### 3. `IEventPublisher` Tracing
+
+As discussed earlier, almost all domain side-effects trigger an event via `IEventPublisher.PublishAsync`.
+
+Instead of manually editing dozens of disparate consumer classes (like the Email Service or Inventory Service), the core `PublishAsync` method inside `Nop.Services.Events.EventPublisher` was instrumented with an OpenTelemetry trace span.
+
+# Metrics Implemented
+
+Four custom OpenTelemetry instruments in `NopMetrics.cs` were created to explicitly monitor the business performance of the checkout flow:
+
+1.  **`orders.placed`** (Counter)
+    *   Tracks the total volume of successful and failed orders.
+2.  **`checkout.duration`** (Histogram)
+    *   Measures the end-to-end latency of the entire `PlaceOrderAsync` operation.
+3.  **`inventory.update.duration`** (Histogram)
+    *   Tracks the performance of database inventory adjustments (`ProductService.AdjustInventoryAsync`).
+4.  **`payment.provider.duration`** (Histogram)
+    *   Measures the latency introduced specifically by external third-party payment gateways (`PaymentService.ProcessPaymentAsync`). For this case, since the payments are mocked, this metric is not entirely meaningful, but it was kept since it would be relevant in production.
+
+
+# Dashboard
+
+
+# Load Test
+
+To stress-test the observability instrumentation and ensure the dashboard correctly tracked throughput, latency, and errors under pressure, a comprehensive load testing script was created using **k6** (`load-test/checkout-flow.js`).
+
+### 1. Traffic Strategy
+The script simulates a realistic, 4-minute "ramp-up / ramp-down" traffic pattern using k6 stages. It progressively scales from 0 up to 10 concurrent Virtual Users (VUs) and then scales back down, ensuring we capture both "cold start" latency and sustained throughput capacity.
+
+### 2. Simulated User Journey
+* **Product Discovery:** Visits the homepage and randomly navigates to a predefined laptop product page.
+* **Security Handling:** Parses the HTML response body using RegExp to extract the ASP.NET Core `__RequestVerificationToken` (anti-CSRF token).
+* **Cart Management:** Submits a POST request to add the random product to the shopping cart.
+* **Checkout Flow:** Progresses through the "Checkout as Guest" steps, submitting Billing Address, saving dummy Shipping options, selecting the `Payments.CheckMoneyOrder` gateway, and saving Payment Information.
+* **Order Confirmation:** Submits the final `POST /checkout/OpcConfirmOrder` request to seal the transaction.
+
+### 3. Intentional Fault Injection
+The most critical part of this load test was proving that the custom OpenTelemetry Error Metrics (`order.status = failure`) actually worked. 
+
+To achieve this organically, a 20% random fault mechanism was introduced at the very end of the script (`Math.random() < 0.2`). When triggered, the script intentionally submits the final `OpcConfirmOrder` POST request a *second time*. Because the user's cart was already successfully emptied by the first request, this malicious double-submit reliably triggers an "empty cart" exception inside the NopCommerce `CheckoutController`.
+
+
+# How to run
+
+Run the application with the following command:
+
+```bash
+docker compose up --build
+```
+
+Once the containers are running, you can access the following interfaces in your browser:
+* **The e-Commerce Store:** [http://localhost](http://localhost)
+* **Grafana (Dashboards):** [http://localhost:3000](http://localhost:3000)
+* **Jaeger (Distributed Tracing):** [http://localhost:16686](http://localhost:16686)
+* **Prometheus (Raw Metrics):** [http://localhost:9090](http://localhost:9090)
+
+
+If it is desired to run the load test to popul
+
+```bash
+k6 run load-test/checkout-flow.js
+```
+
+
+# LLM Acknowledgements
+
+LLM models were used to assist in the development of this project. Firstly, it helped me to understand the large codebase of this project, before starting the implementation of the requirements of the project. It also served as a tool to discuss and validate the best approaches to implement the instrumentation required, based on the guidelines provided. Finally, it was used to write and format the final documentation, such as this README.md file and the CRITIQUE.md.
+
+
+
