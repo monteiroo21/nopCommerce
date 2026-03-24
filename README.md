@@ -13,7 +13,7 @@ The system is organized into the following primary layers, from top to bottom:
 * **Dependency Rule:** Depends heavily on `Nop.Core` (for domain models) and `Nop.Data` (for database access/repositories). It is completely decoupled from the Presentation Layer.
 
 ### 3. Data Access Layer (`Nop.Data`)
-* **Responsibility:** Acts as the translation layer between C# code and the SQL database using Entity Framework Core. It defines the mapping configurations (using the Fluent API) to convert domain entities into database tables and provides the Repository implementation.
+* **Responsibility:** Acts as the translation layer between C# code and the SQL database using **LinqToDB**. It defines the mapping configurations (using `NopMappingSchema`) to convert domain entities into database tables and provides the Repository implementation via `IRepository<T>`.
 * **Dependency Rule:** Depends entirely on `Nop.Core` to know which entities it needs to persist.
 
 ### 4. Domain Layer (`Nop.Core`)
@@ -108,6 +108,13 @@ Four custom OpenTelemetry instruments in `NopMetrics.cs` were created to explici
 
 # Dashboard
 
+Metrics:
+
+![Metrics](dash-metrics.png)
+
+Traces:
+
+![Traces](dash-traces.png)
 
 # Load Test
 
